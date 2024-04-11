@@ -234,8 +234,9 @@ def load_data():
 
 
 trainloader, testloader = load_data()
+
 if torch.cuda.is_available():
-    print("Placa de Video")
+    print("GPU")
 else:
     print("CPU")
 
@@ -272,6 +273,7 @@ class FlowerClient(fl.client.NumPyClient):
 
 
 net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
+
 # Start Flower client
 fl.client.start_numpy_client(
     server_address="127.0.0.1:8080",
