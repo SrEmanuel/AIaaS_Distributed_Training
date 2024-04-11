@@ -1,85 +1,141 @@
 {
-    "swagger": "2.0",
-    "info": {
-      "title": "Access API",
-      "version": "1.0.0"
-    },
-    "paths": {
-      "/": {
-        "get": {
-          "description": "Returns message showing app is up",
-          "produces": [
-            "application/json"
-          ],
-          "responses": {
-            "200": {
-              "description": "Successful operation"
-            }
-          }
-        }
-      },
-      "/access": {
-        "post": {
-          "description": "Grants access to an user",
-          "consumes": [
-            "application/json"
-          ],
-          "produces": [
-            "application/json"
-          ],
-          "parameters": [
-            {
-              "name": "access data",
-              "in": "body",
-              "description": "JSON data for the api",
-              "required": true,
-              "schema": {
-                "$ref": "#/definitions/AccessData"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "User granted access"
-            },
-            "400": {
-              "description": "Invalid request data"
-            }
-          }
-        }
-      },
-      "/run/train": {
-        "post": {
-          "description": "Start a train process by the AIaaS Architecture",
-          "consumes": [
-            "application/json"
-          ],
-          "produces": [
-            "application/json"
-          ],
-          "parameters": [
-            {
-              "name": "access data",
-              "in": "body",
-              "description": "JSON data for the Train API",
-              "required": true,
-              "schema": {
-                "$ref": "#/definitions/AccessData"
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Train Started"
-            },
-            "400": {
-              "description": "Not able to start the train process"
-            }
+  "swagger": "2.0",
+  "info": {
+    "title": "Access API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Returns message showing app is up",
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation"
           }
         }
       }
     },
-    "definitions": {
+    "/access": {
+      "post": {
+        "description": "Grants access to an user",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "access data",
+            "in": "body",
+            "description": "JSON data for the api",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AccessData"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User granted access"
+          },
+          "400": {
+            "description": "Invalid request data"
+          }
+        }
+      }
+    },
+    "/run/train": {
+      "post": {
+        "description": "Start a train process by the AIaaS Architecture",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "access data",
+            "in": "body",
+            "description": "JSON data for the Train API",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TrainSpec"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Train Started"
+          },
+          "400": {
+            "description": "Not able to start the train process"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "TrainSpec": {
+      "type": "object",
+      "properties": {
+        "server_ip": {
+          "type": "string",
+          "default": "127.0.0.1"
+        },
+        "port": {
+          "type": "string",
+          "default": "3002",
+          "description": "Porta do servidor de treinamento"
+        },
+        "world_size": {
+          "type": "integer",
+          "default": 3,
+          "description": "Numero que entidades envolvidas no FL. If the number os clients are 2 and the server, the world_size is 3"
+        },
+        "rank": {
+          "type": "integer",
+          "description": "Rank do processo entre seus pares"
+        },
+        "model_name": {
+          "type": "string",
+          "default": "alexnet",
+          "description": "Nome do modelo"
+        },
+        "dataset_name": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "Lista de nomes dos datasets. Um dataset diferente para cada cliente."
+        },
+        "epochs": {
+          "type": "integer"
+        },
+        "lr": {
+          "type": "number",
+          "format": "float",
+          "default": 0.001
+        },
+        "dataset_id": {
+          "type": "integer",
+          "description": "ID do DataSet"
+        },
+        "batch_size": {
+          "type": "integer",
+          "default": 32,
+          "description": "Batch Size do Dataset"
+        },
+        "optim": {
+          "type": "string",
+          "description": "Otimizador a escolher: Adam ou SGD"
+        }
+      }
+      },
       "AccessData": {
         "type": "object",
         "properties": {
@@ -91,6 +147,5 @@
           }
         }
       }
-    }
   }
-  
+}

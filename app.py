@@ -1,6 +1,9 @@
 from crypt import methods
 from flask import Flask,jsonify,request
 from flask_swagger_ui import get_swaggerui_blueprint
+import threading
+import subprocess
+
 
 app = Flask(__name__)
 SWAGGER_URL="/swagger"
@@ -36,19 +39,47 @@ def access():
         "Message": message
     })
 
-@app.route("/run/train",methods=["POST"])
+@app.route("/run/train", methods=["POST"])
 def train():
-    print("Hello world")
+    print("Staring...")
     data = request.get_json()
     print(data)
-    name = data.get("name", "dipto")
-    server = data.get("server","server1")
 
-    message = f"User {name} received access to server {server}"
+    server_ip = data.get("server_ip", "127.0.0.1")
+    port = data.get("port", "3002")
+    world_size = data.get("world_size", 3)
+    rank = data.get("rank")
+    model_name = data.get("model_name", "alexnet")
+    dataset_name = data.get("dataset_name", [])
+    epochs = data.get("epochs")
+    lr = data.get("lr", 0.001)
+    dataset_id = data.get("dataset_id")
+    batch_size = data.get("batch_size", 32)
+    optim = data.get("optim")
 
-    return jsonify({
-        "Message": message
-    })
+    # Executar fl_client.py em uma thread separada
+    thread = threading.Thread(target=run_fl_client, args=(
+    server_ip, port, world_size, rank, model_name, dataset_name, epochs, lr, dataset_id, batch_size, optim))
+    thread.start()
+
+    message = f"Federated Learning Process started on client {rank}."
+
+    return jsonify({"Message": message})
+
+def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, epochs, lr, dataset_id, batch_size, optim):
+    subprocess.run(["python3", "scripts/fl_client.py",
+                    "--server_ip", server_ip,
+                    "--port", port,
+                    "--world_size", str(world_size),
+                    "--rank", str(rank),
+                    "--model_name", model_name,
+                    "--dataset_name"] + dataset_name +
+                   ["--epochs", str(epochs),
+                    "--lr", str(lr),
+                    "--dataset_id", str(dataset_id),
+                    "--batch_size", str(batch_size),
+                    "--optim", optim])
+
 
 if __name__=="__main__":
     app.run(host="0.0.0.0",port=8080)

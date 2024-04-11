@@ -29,6 +29,7 @@ parser = argparse.ArgumentParser(description='Distbelief training example')
 parser.add_argument('--ip', type=str, default='127.0.0.1')
 parser.add_argument('--port', type=str, default='3002')
 parser.add_argument('--world_size', type=int)
+parser.add_argument('--dataset_name', type=str, default='biglycan')
 parser.add_argument('--rank', type=int)
 parser.add_argument('--model_name', type=str, help='Give the model name')
 parser.add_argument('--dataset', type=str, help='Nome do diretório do dataset')
@@ -92,9 +93,9 @@ def evaluate(
 strategy = fl.server.strategy.FedAvg(
     fraction_fit=1.0,
     fraction_evaluate=1.0,
-    min_fit_clients=3,
-    min_evaluate_clients=3,
-    min_available_clients=3,
+    min_fit_clients=2,
+    min_evaluate_clients=2,
+    min_available_clients=2,
     #evaluate_fn=evaluate,
     evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
 )

@@ -20,6 +20,9 @@ import torchvision.models as models
 from torchvision import transforms
 from torchvision.transforms import Compose, Normalize, ToTensor
 from torchvision.datasets import ImageFolder
+import os
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+
 
 # #############################################################################
 # 1. Regular PyTorch pipeline: nn.Module, train, test, and DataLoader
@@ -33,6 +36,8 @@ DATE_NOW = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 parser = argparse.ArgumentParser(description='Distbelief training example')
 parser.add_argument('--ip', type=str, default='127.0.0.1')
+parser.add_argument('--server_ip', type=str, default='127.0.0.1')
+parser.add_argument('--dataset_name', type=str, default='biglycan')
 parser.add_argument('--port', type=str, default='3002')
 parser.add_argument('--world_size', type=int)
 parser.add_argument('--rank', type=int)
@@ -44,6 +49,36 @@ parser.add_argument("--dataset_id", type=int, help='ID do DataSet')
 parser.add_argument("--batch_size", type=int, default=32, help='Batch Size do Dataset')
 parser.add_argument("--optim", type=str, help='Optimizer to choose: Adam or SGD')
 args = parser.parse_args()
+
+def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name):
+    cm = confusion_matrix(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title(f'Confusion Matrix\nAccuracy: {accuracy:.2%}, Loss: {loss:.4f}, Time: {elapsed_time:.2f} seconds')
+
+    # Save the plot as a PDF
+    output_dir = output_dir + r'/outputs/' + model_name
+    os.makedirs(output_dir, exist_ok=True)
+    result_dir = output_dir + '/' + model_name +'_' + DATE_NOW
+    os.makedirs(result_dir, exist_ok=True)
+    output_path = os.path.join(result_dir, f'{model_name}_confusion_matrix.pdf')
+    plt.savefig(output_path, format="pdf", bbox_inches='tight')
+
+    # Calculate precision, recall, and F1-score
+    precision = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+
+    metrics_path = os.path.join(result_dir, "metrics.txt")
+    with open(metrics_path, 'w') as f:
+        f.write(f"Accuracy: {accuracy:.2%}\n")
+        f.write(f"Precision: {precision:.4f}\n")
+        f.write(f"Recall: {recall:.4f}\n")
+        f.write(f"F1-score: {f1:.4f}\n")
+        f.write(f"Loss: {loss:.4f}\n")
+        f.write(f"Elapsed Time: {elapsed_time:.2f} seconds")
 
 class Net(nn.Module):
 
@@ -175,7 +210,7 @@ def test(net, testloader, output_dir):
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
     # save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, real_loss, elapsed_time)
-    save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, real_loss, elapsed_time)
+    save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, real_loss, elapsed_time, args.model_name)
 
     return real_loss, accuracy
 
@@ -191,8 +226,8 @@ def load_data():
         ])
     }
 
-    trainset = ImageFolder("../dataset/production/train", transform=data_transforms['transform'])
-    testset = ImageFolder("../dataset/production/test", transform=data_transforms['transform'])
+    trainset = ImageFolder("./dataset/production/train", transform=data_transforms['transform'])
+    testset = ImageFolder("./dataset/production/test", transform=data_transforms['transform'])
     return DataLoader(trainset, batch_size=16, shuffle=True), DataLoader(testset)
 
 
