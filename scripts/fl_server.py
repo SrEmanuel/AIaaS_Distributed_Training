@@ -187,7 +187,7 @@ def evaluate(
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
     net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
     set_parameters(net, parameters)  # Update model with the latest parameters
-    loss, accuracy = test(net, testloader)
+    loss, accuracy = test(net, testloader, output_dir=".")
     torch.save(net.state_dict(), 'server_model_aggregated.pth')
     accuracy_percent = accuracy * 100  # Multiplica a precisão por 100 para obter o valor percentual
     print(f"\n### Server-side evaluation loss {loss} / accuracy {accuracy_percent:.2f}% ###\n")
