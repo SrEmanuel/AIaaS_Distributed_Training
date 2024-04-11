@@ -168,8 +168,8 @@ def load_data():
         ])
     }
 
-    trainset = ImageFolder("./dataset/production/train", transform=data_transforms['transform'])
-    testset = ImageFolder("./dataset/production/test", transform=data_transforms['transform'])
+    trainset = ImageFolder("../dataset/production/train", transform=data_transforms['transform'])
+    testset = ImageFolder("../dataset/production/test", transform=data_transforms['transform'])
     return DataLoader(trainset, batch_size=16, shuffle=True), DataLoader(testset)
 
 
@@ -185,7 +185,7 @@ def evaluate(
     parameters: fl.common.NDArrays,
     config: Dict[str, fl.common.Scalar],
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
-    net = LSTMModel(input_size=49, hidden_size=32, num_layers=5, output_size=2).to(DEVICE)
+    net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
     set_parameters(net, parameters)  # Update model with the latest parameters
     loss, accuracy = test(net, testloader)
     torch.save(net.state_dict(), 'server_model_aggregated.pth')
