@@ -19,7 +19,8 @@ import numpy as np
 from collections import OrderedDict
 from tqdm import tqdm
 import torchvision.models as models
-
+from torchvision import transforms
+from torchvision.transforms import Compose, Normalize, ToTensor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -29,7 +30,7 @@ parser.add_argument('--ip', type=str, default='127.0.0.1')
 parser.add_argument('--port', type=str, default='3002')
 parser.add_argument('--world_size', type=int)
 parser.add_argument('--rank', type=int)
-parser.add_argument('--model_name', help='Give the model name')
+parser.add_argument('--model_name', type=str, help='Give the model name')
 parser.add_argument('--dataset', type=str, help='Nome do diretório do dataset')
 parser.add_argument("--epochs", type=int)
 parser.add_argument("--lr", type=float, default=0.001)
@@ -45,11 +46,11 @@ class Net(nn.Module):
         if model_name == "alexnet":
             self.model = models.alexnet(weights='DEFAULT')
             num_features = self.model.classifier[6].in_features
-            self.model.classifier[6] = nn.Linear(num_features, 2)
+            self.model.classifier[6] = nn.Linear(num_features, output)
         elif model_name == "resnet":
             self.model = models.resnet50(weights='DEFAULT')
             num_features = self.model.fc.in_features
-            self.model.fc = nn.Linear(num_features, 2)
+            self.model.fc = nn.Linear(num_features, output)
         else:
             raise ValueError(f"Modelo não suportado: {model_name}")
 
@@ -69,7 +70,7 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     return {"accuracy": sum(accuracies) / sum(examples)}
 
 #_, testloader = create_federated_testloader()
-net = Net(model_name=args.model_name, class_num="", output="").to(DEVICE)
+net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
 
 # The `evaluate` function will be by Flower called after every round
 def evaluate(
