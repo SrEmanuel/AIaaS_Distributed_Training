@@ -59,11 +59,11 @@ def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, los
     plt.title(f'Confusion Matrix\nAccuracy: {accuracy:.2%}, Loss: {loss:.4f}, Time: {elapsed_time:.2f} seconds')
 
     # Save the plot as a PDF
-    output_dir = output_dir + r'/outputs/' + model_name
+    output_dir = output_dir + '/teste/'
     os.makedirs(output_dir, exist_ok=True)
-    result_dir = output_dir + '/' + model_name +'_' + DATE_NOW
+    result_dir = output_dir + '/teste2/'
     os.makedirs(result_dir, exist_ok=True)
-    output_path = os.path.join(result_dir, f'{model_name}_confusion_matrix.pdf')
+    output_path = os.path.join(result_dir, f'confusion_matrix.pdf')
     plt.savefig(output_path, format="pdf", bbox_inches='tight')
 
     # Calculate precision, recall, and F1-score
@@ -161,11 +161,11 @@ def train(net, trainloader, epochs, output_dir, model_name):
     plt.tight_layout()
 
     # Save the plot as a PDF
-    output_dir = output_dir + r'/outputs/' + model_name
+    output_dir = output_dir + '/teste'
     os.makedirs(output_dir, exist_ok=True)
-    result_dir = output_dir + '/' + model_name + '_' + DATE_NOW
+    result_dir = output_dir + '/teste2'
     os.makedirs(result_dir, exist_ok=True)
-    output_path = os.path.join(result_dir, f'{model_name}_loss_accuracy_plots.pdf')
+    output_path = os.path.join(result_dir, f'loss_accuracy_plots.pdf')
     plt.savefig(output_path, format="pdf", bbox_inches='tight')
 
 
@@ -262,12 +262,12 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         self.set_parameters(parameters)
-        train(net, trainloader, epochs=args.epochs, model_name=net)
+        train(net, trainloader, epochs=args.epochs,output_dir="./output", model_name=net)
         return self.get_parameters(config={}), len(trainloader.dataset), {}
 
     def evaluate(self, parameters, config):
         self.set_parameters(parameters)
-        loss, accuracy = test(net, testloader)
+        loss, accuracy = test(net, testloader,"./output/")
         print("Acurácia do Cliente: "+str(args.dataset_id)+str(" eh: ")+str(accuracy))
         return float(loss), len(testloader.dataset), {"accuracy": round(float(accuracy) * 100, 2)}
 
@@ -276,6 +276,6 @@ net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
 
 # Start Flower client
 fl.client.start_numpy_client(
-    server_address="127.0.0.1:8080",
+    server_address=args.server_ip + ":" + args.port,
     client=FlowerClient(),
 )

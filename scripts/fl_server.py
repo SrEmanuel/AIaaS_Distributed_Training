@@ -33,15 +33,8 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 parser = argparse.ArgumentParser(description='Distbelief training example')
 parser.add_argument('--ip', type=str, default='127.0.0.1')
 parser.add_argument('--port', type=str, default='3002')
-parser.add_argument('--world_size', type=int)
-parser.add_argument('--dataset_name', type=str, default='biglycan')
-parser.add_argument('--rank', type=int)
 parser.add_argument('--model_name', type=str, help='Give the model name')
-parser.add_argument('--dataset', type=str, help='Nome do diretório do dataset')
-parser.add_argument("--epochs", type=int)
-parser.add_argument("--lr", type=float, default=0.001)
-parser.add_argument("--dataset_id", type=int, help='ID do DataSet')
-parser.add_argument("--batch_size", type=int, default=32, help='Batch Size do Dataset')
+
 args = parser.parse_args()
 
 def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name):
@@ -168,8 +161,8 @@ def load_data():
         ])
     }
 
-    trainset = ImageFolder("../dataset/production/train", transform=data_transforms['transform'])
-    testset = ImageFolder("../dataset/production/test", transform=data_transforms['transform'])
+    trainset = ImageFolder("./dataset/production/train", transform=data_transforms['transform'])
+    testset = ImageFolder("./dataset/production/test", transform=data_transforms['transform'])
     return DataLoader(trainset, batch_size=16, shuffle=True), DataLoader(testset)
 
 
@@ -210,7 +203,7 @@ strategy = fl.server.strategy.FedAvg(
 net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
 # Start Flower server
 fl.server.start_server(
-    server_address="0.0.0.0:8080",
+    server_address="0.0.0.0:"+args.port,
     config=fl.server.ServerConfig(num_rounds=3),
     strategy=strategy
 )

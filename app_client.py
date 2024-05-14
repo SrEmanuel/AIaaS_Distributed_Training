@@ -4,6 +4,7 @@ from flask_swagger_ui import get_swaggerui_blueprint
 import threading
 import subprocess
 
+process = None
 
 app = Flask(__name__)
 SWAGGER_URL="/swagger"
@@ -41,6 +42,9 @@ def access():
 
 @app.route("/run/train", methods=["POST"])
 def train():
+    if process and process.poll() is None:
+        return jsonify({"status": "This server is already running a training. Please, wait for it become free to go again"}), 503
+    
     print("Staring...")
     data = request.get_json()
     print(data)
@@ -66,8 +70,17 @@ def train():
 
     return jsonify({"Message": message})
 
+
+@app.route('/server-status', methods=['GET'])
+def check_server():
+    if process and process.poll() is None:
+        return jsonify({"status": "The server is running a training."}), 503
+    else:
+        return jsonify({"status": "The server is twiddling its thumbs, waiting for action."}), 200
+
 def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, epochs, lr, dataset_id, batch_size, optim):
-    subprocess.run(["python3", "scripts/fl_client.py",
+    global process 
+    process = subprocess.Popen(["python3", "scripts/fl_client.py",
                     "--server_ip", server_ip,
                     "--port", port,
                     "--world_size", str(world_size),
@@ -82,4 +95,4 @@ def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, e
 
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0",port=8080)
+    app.run(host="0.0.0.0",port=8081)
