@@ -64,3 +64,4 @@ typer==0.9.4
 typing_extensions==4.11.0
 tzdata==2024.1
 Werkzeug==1.0.1  # replace local reference with latest version or a version compatible with your project
+requests==2.26.0
