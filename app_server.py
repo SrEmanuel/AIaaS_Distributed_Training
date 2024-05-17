@@ -9,6 +9,7 @@ import subprocess
 
 process = None
 trainingUuid = None
+process = None
 app = Flask(__name__)
 SWAGGER_URL="/swagger"
 API_URL="/static/swagger.json"
@@ -46,12 +47,14 @@ def train():
     if(trainingUuid == None):
         return
     
+    numrounds = data.get("rounds", 3)
     server_ip = data.get("server_ip", "127.0.0.1")
     port = data.get("port", "3002")
     model_name = data.get("model_name", "alexnet")
+    
     # Executar fl_client.py em uma thread separada
     thread = threading.Thread(target=run_fl_server, args=(
-    server_ip, port, model_name,))
+    server_ip, port, model_name, trainingUuid, numrounds))
     thread.start()
 
     message = f"Federated Learning Server started successfully."
@@ -65,19 +68,7 @@ def check_server():
         return jsonify({"status": "The server is running a training."}), 503
     else:
         return jsonify({"status": "The server is twiddling its thumbs, waiting for action."}), 200
-
-
-
-def checkTrainingFinish():
-    global process
-    while(process is not None and process.poll() is None):
-        print("o treinamento ainda não terminou!")
-        sleep(5)
-
-    print("O treinamento terminou!")
-    performTrainingRequest()
-    
-
+ 
 def performTrainingRequest():
     
     file = open("./scripts/teste.pdf", 'rb')
@@ -97,17 +88,24 @@ def performTrainingRequest():
     global trainingUuid
     requests.post(IAAS_ENDPOINT_LOCAL+"/finishTraining/"+trainingUuid, files=parts)
     
-    
-    
-def run_fl_server(server_ip, port, model_name):
+def checkTrainingFinish():
+    global process
+    while(process is not None and process.poll() is None):
+        print("-> o treinamento ainda não terminou!")
+        sleep(10)
+
+    print("O treinamento terminou!")
+    performTrainingRequest()
+   
+def run_fl_server(server_ip, port, model_name, trainingUuid, rounds):
     global process 
     process = subprocess.Popen(["python3", "scripts/fl_server.py",
                     "--port", str(port),
-                    "--model_name", str(model_name)])
-    
+                    "--model_name", str(model_name),
+                    "--trainingUuid", str(trainingUuid),
+                    "--numRounds", str(rounds)])
     checkTrainingFinish()
 
 
-
 if __name__=="__main__":
-    app.run(host="0.0.0.0",port=8081)
+    app.run(host="0.0.0.0",port=8082)
