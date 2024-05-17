@@ -1,7 +1,11 @@
+import datetime
+import time
+import json
 from typing import List, Tuple
 
 import flwr as fl
 from flwr.common import Metrics
+import requests
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import Dataset
@@ -27,22 +31,25 @@ from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, r
 import os
 import seaborn as sns
 
+START = time.time()
+DATE_NOW = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
 warnings.filterwarnings("ignore", category=UserWarning)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+IAAS_ENDPOINT_LOCAL="http://localhost:8080/api/v1/training"
+IAAS_ENDPOINT="https://api.iaas.emanuelm.dev/api/v1/training"
 
 parser = argparse.ArgumentParser(description='Distbelief training example')
 parser.add_argument('--ip', type=str, default='127.0.0.1')
 parser.add_argument('--port', type=str, default='3002')
-parser.add_argument('--world_size', type=int)
-parser.add_argument('--dataset_name', type=str, default='biglycan')
-parser.add_argument('--rank', type=int)
 parser.add_argument('--model_name', type=str, help='Give the model name')
-parser.add_argument('--dataset', type=str, help='Nome do diretório do dataset')
-parser.add_argument("--epochs", type=int)
-parser.add_argument("--lr", type=float, default=0.001)
-parser.add_argument("--dataset_id", type=int, help='ID do DataSet')
-parser.add_argument("--batch_size", type=int, default=32, help='Batch Size do Dataset')
+parser.add_argument('--trainingUuid', type=str, help='Training UUID')
+parser.add_argument('--numRounds', type=str, help='Number of rounds')
+
 args = parser.parse_args()
+
+if(args.trainingUuid is None):
+    raise Exception("You must inform the training UUID!!")
 
 def save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, loss, elapsed_time, model_name):
     cm = confusion_matrix(y_true, y_pred)
@@ -140,7 +147,7 @@ def test(net, testloader, output_dir):
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
     # save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, real_loss, elapsed_time)
-    save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, real_loss, elapsed_time)
+    save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, real_loss, elapsed_time, args.model_name)
 
     return real_loss, accuracy
 
@@ -168,8 +175,8 @@ def load_data():
         ])
     }
 
-    trainset = ImageFolder("../dataset/production/train", transform=data_transforms['transform'])
-    testset = ImageFolder("../dataset/production/test", transform=data_transforms['transform'])
+    trainset = ImageFolder("./dataset/production/train", transform=data_transforms['transform'])
+    testset = ImageFolder("./dataset/production/test", transform=data_transforms['transform'])
     return DataLoader(trainset, batch_size=16, shuffle=True), DataLoader(testset)
 
 
@@ -202,15 +209,36 @@ strategy = fl.server.strategy.FedAvg(
     min_fit_clients=2,
     min_evaluate_clients=2,
     min_available_clients=2,
-    #evaluate_fn=evaluate,
+    evaluate_fn=evaluate,
     evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
 )
 
 
+def performTrainingRequest(status: str):
+    
+    file = open("./scripts/teste.pdf", 'rb')
+    
+    training_finish_dto = {
+        "timestamp": time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(time.time())),
+        "status": status,
+        "data": "Training data",
+        "errors": []
+    }
+    
+    parts = {
+        'file': ('teste.pdf', file),
+        'request': ('json', json.dumps(training_finish_dto), 'application/json')
+    }
+
+    
+    requests.post(IAAS_ENDPOINT_LOCAL+"/finishTraining/"+args.trainingUuid, files=parts)
+
 net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
+
 # Start Flower server
 fl.server.start_server(
-    server_address="0.0.0.0:8080",
-    config=fl.server.ServerConfig(num_rounds=3),
+    server_address="0.0.0.0:"+args.port,
+    config=fl.server.ServerConfig(num_rounds=int(args.numRounds)),
     strategy=strategy
 )
+

@@ -1,9 +1,14 @@
+#ARQUIVO PARA SOMENTE USAR A PORTA 8081!!!!
+#ARQUIVO ORIGINAL É O app_client.py
+
+from time import sleep
 from crypt import methods
 from flask import Flask,jsonify,request
 from flask_swagger_ui import get_swaggerui_blueprint
 import threading
 import subprocess
 
+process = None
 
 app = Flask(__name__)
 SWAGGER_URL="/swagger"
@@ -41,22 +46,26 @@ def access():
 
 @app.route("/run/train", methods=["POST"])
 def train():
+    if process and process.poll() is None:
+        return jsonify({"status": "This server is already running a training. Please, wait for it become free to go again"}), 503
+    
     print("Staring...")
     data = request.get_json()
     print(data)
 
     server_ip = data.get("server_ip", "127.0.0.1")
     port = data.get("port", "3002")
-    world_size = data.get("world_size", 3)
+    world_size = data.get("worldSize", 3)
     rank = data.get("rank")
     model_name = data.get("model_name", "alexnet")
-    dataset_name = data.get("dataset_name", [])
+    dataset_name = data.get("datasetName", [])
     epochs = data.get("epochs")
     lr = data.get("lr", 0.001)
-    dataset_id = data.get("dataset_id")
-    batch_size = data.get("batch_size", 32)
+    dataset_id = data.get("datasetId")
+    batch_size = data.get("batchSize", 32)
     optim = data.get("optim")
 
+    sleep(5)
     # Executar fl_client.py em uma thread separada
     thread = threading.Thread(target=run_fl_client, args=(
     server_ip, port, world_size, rank, model_name, dataset_name, epochs, lr, dataset_id, batch_size, optim))
@@ -66,15 +75,23 @@ def train():
 
     return jsonify({"Message": message})
 
+
+@app.route('/server-status', methods=['GET'])
+def check_server():
+    if process and process.poll() is None:
+        return jsonify({"status": "The server is running a training."}), 503
+    else:
+        return jsonify({"status": "The server is twiddling its thumbs, waiting for action."}), 200
+
 def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, epochs, lr, dataset_id, batch_size, optim):
-    subprocess.run(["python3", "scripts/fl_client.py",
-                    "--server_ip", server_ip,
-                    "--port", port,
+    global process 
+    process = subprocess.Popen(["python3", "scripts/fl_client.py",
+                    "--server_ip", str(server_ip),
+                    "--port", str(port),
                     "--world_size", str(world_size),
                     "--rank", str(rank),
                     "--model_name", model_name,
-                    "--dataset_name"] + dataset_name +
-                   ["--epochs", str(epochs),
+                    "--epochs", str(epochs),
                     "--lr", str(lr),
                     "--dataset_id", str(dataset_id),
                     "--batch_size", str(batch_size),
@@ -82,4 +99,4 @@ def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, e
 
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0",port=8080)
+    app.run(host="0.0.0.0",port=8081)
