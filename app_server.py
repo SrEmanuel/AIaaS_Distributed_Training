@@ -13,7 +13,8 @@ process = None
 app = Flask(__name__)
 SWAGGER_URL="/swagger"
 API_URL="/static/swagger.json"
-IAAS_ENDPOINT_LOCAL="http://localhost:8080/api/v1/training"
+#O endereço ip no endpoint local se refere ao ip designado para a máquina do IAAS via VPN
+IAAS_ENDPOINT_LOCAL="http://10.255.0.2:8080/api/v1/training"
 IAAS_ENDPOINT="http://api.iaas.emanuelm.dev/api/v1/training"
 actualTrainingUuid= None
 
@@ -80,6 +81,7 @@ def performTrainingRequest():
         "errors": []
     }
     
+    #Alterar o nome aqui em baixo para ele buscar o .pth ao invés do .pdf
     parts = {
         'file': ('teste.pdf', file),
         'request': ('json', json.dumps(training_finish_dto), 'application/json')
@@ -108,4 +110,4 @@ def run_fl_server(server_ip, port, model_name, trainingUuid, rounds):
 
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0",port=8082)
+    app.run(host="0.0.0.0",port=8081)

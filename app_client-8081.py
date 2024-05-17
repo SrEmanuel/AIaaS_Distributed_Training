@@ -1,5 +1,8 @@
-from crypt import methods
+#ARQUIVO PARA SOMENTE USAR A PORTA 8081!!!!
+#ARQUIVO ORIGINAL É O app_client.py
+
 from time import sleep
+from crypt import methods
 from flask import Flask,jsonify,request
 from flask_swagger_ui import get_swaggerui_blueprint
 import threading
@@ -59,8 +62,9 @@ def train():
     epochs = data.get("epochs")
     lr = data.get("lr", 0.001)
     dataset_id = data.get("datasetId")
-    batch_size = data.get("batch_size", 32)
+    batch_size = data.get("batchSize", 32)
     optim = data.get("optim")
+
     sleep(5)
     # Executar fl_client.py em uma thread separada
     thread = threading.Thread(target=run_fl_client, args=(
@@ -91,8 +95,8 @@ def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, e
                     "--lr", str(lr),
                     "--dataset_id", str(dataset_id),
                     "--batch_size", str(batch_size),
-    	                "--optim", optim])
+                    "--optim", optim])
 
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0",port=8080)
+    app.run(host="0.0.0.0",port=8081)

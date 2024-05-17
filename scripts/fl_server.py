@@ -147,7 +147,7 @@ def test(net, testloader, output_dir):
     # Save the confusion matrix and accuracy
     class_names = ["benign", "malignant"]
     # save_confusion_matrix(true_labels, predicted_labels, class_names, output_dir, accuracy, real_loss, elapsed_time)
-    save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, real_loss, elapsed_time)
+    save_confusion_matrix(y_true, y_pred, class_names, output_dir, accuracy, real_loss, elapsed_time, args.model_name)
 
     return real_loss, accuracy
 
@@ -235,14 +235,10 @@ def performTrainingRequest(status: str):
 
 net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
 
-try:
 # Start Flower server
-    fl.server.start_server(
-        server_address="0.0.0.0:"+args.port,
-        config=fl.server.ServerConfig(num_rounds=int(args.numRounds)),
-        strategy=strategy
-    )
-    performTrainingRequest('success')
-except:
-    performTrainingRequest('error')
+fl.server.start_server(
+    server_address="0.0.0.0:"+args.port,
+    config=fl.server.ServerConfig(num_rounds=int(args.numRounds)),
+    strategy=strategy
+)
 

@@ -22,7 +22,7 @@ from torchvision.transforms import Compose, Normalize, ToTensor
 from torchvision.datasets import ImageFolder
 import os
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-
+import seaborn as sns 
 
 # #############################################################################
 # 1. Regular PyTorch pipeline: nn.Module, train, test, and DataLoader
@@ -276,6 +276,6 @@ net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
 
 # Start Flower client
 fl.client.start_numpy_client(
-    server_address=args.server_ip + ":" + args.port,
+    server_address="200.17.78.38:8080",
     client=FlowerClient(),
 )
