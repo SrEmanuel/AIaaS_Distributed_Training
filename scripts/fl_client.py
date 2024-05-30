@@ -276,6 +276,6 @@ net = Net(model_name=args.model_name, class_num=2, output=2).to(DEVICE)
 
 # Start Flower client
 fl.client.start_numpy_client(
-    server_address="200.17.78.38:8080",
+    server_address="200.17.78.38:"+args.port,
     client=FlowerClient(),
 )
