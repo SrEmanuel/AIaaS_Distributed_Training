@@ -22,6 +22,10 @@ swagger_ui_blueprint = get_swaggerui_blueprint(
 )
 app.register_blueprint(swagger_ui_blueprint, url_prefix=endpoints.SWAGGER_URL)
 
+# Fui eu quem fiz, mas eu não me orgulho.
+# Odeio paradigma declarativo.
+# Tudo misturado, salada de fruta.
+
 @app.route("/")
 def home():
     return jsonify({
@@ -33,17 +37,26 @@ def train():
     data = request.get_json()
     print('[INFO] JSON data from request', data)
 
+    if data is None:
+        print('[ERROR] No body found for request')
+        return
+
     port = data.get("port", "3002")
     print('[INFO] getting training PORT', port)
 
     global process
-    hasTrainingInPort = auxiliary.contains(process, lambda x: x.args[arguments_position.TRAINING_PORT_ARG_POSITION] == port)
-
+    hasTrainingInPort = auxiliary.contains(
+        process, 
+        lambda x: x.args[arguments_position.TRAINING_PORT_ARG_POSITION] == port
+        )
+    
     if hasTrainingInPort:
-        return jsonify({"status": "[INFO] This server is already running a training. Please, wait for it become free to go again"}), 503
+        return jsonify({
+            "status": 
+            "[INFO] This server is already running a training. Please, wait for it become free to go again"
+            }), 503
     
     print("[INFO] Process staring...")
-
     currentTrainingUuid = data.get("trainingUuid", None)
 
     if(currentTrainingUuid == None):
@@ -73,7 +86,11 @@ def check_server():
         return jsonify({"status": "The port was not found on queryString. Please, dispose the desirable port as a query param"}), 500  
 
     global process
-    localProcess = auxiliary.contains(process, lambda x: x.args[arguments_position.TRAINING_PORT_ARG_POSITION] == desirablePort, False)
+    localProcess = auxiliary.contains(
+        process, 
+        lambda x: x.args[arguments_position.TRAINING_PORT_ARG_POSITION] == desirablePort, 
+        False
+        )
 
     if not localProcess:
         print('[INFO] Process not found in queue')
@@ -84,7 +101,7 @@ def check_server():
     
     return jsonify({"status": "The server is twiddling its thumbs, waiting for action."}), 200  
 
-def performTrainingRequest(port):
+def performTrainingRequest(currentProcess):
     file = open("./scripts/teste.pdf", 'rb')
     
     training_finish_dto = {
@@ -100,8 +117,6 @@ def performTrainingRequest(port):
         'request': ('json', json.dumps(training_finish_dto), 'application/json')
     }
     
-    global process
-    currentProcess = auxiliary.contains(process, lambda x: x.args[arguments_position.TRAINING_PORT_ARG_POSITION] == port, False)
     currentUuid = currentProcess.args[arguments_position.TRAINING_UUID_ARG_POSITION]
     
     requests.post(endpoints.IAAS_ENDPOINT_LOCAL+"/finishTraining/"+currentUuid, files=parts)
@@ -119,7 +134,7 @@ def checkTrainingFinish(port):
         sleep(10)
 
     print("[INFO - training ", port, "] O treinamento da porta ", port, " terminou!")
-    performTrainingRequest(port)
+    performTrainingRequest(localProcess)
    
 def run_fl_server(server_ip, port, model_name, trainingUuid, rounds):
     localProcess = subprocess.Popen(["python3", "scripts/fl_server.py",

@@ -51,7 +51,7 @@ def train():
     print(data)
 
     server_ip = data.get("server_ip", "127.0.0.1")
-    port = data.get("port", "3002")
+    port = data.get("port", "8081")
     world_size = data.get("worldSize", 3)
     rank = data.get("rank")
     model_name = data.get("model_name", "alexnet")
