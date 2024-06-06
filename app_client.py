@@ -5,20 +5,21 @@ from flask_swagger_ui import get_swaggerui_blueprint
 import threading
 import subprocess
 
-process = None
+from constants import endpoints, arguments_position
+from helpers import auxiliary
+
+process:list = []
 
 app = Flask(__name__)
-SWAGGER_URL="/swagger"
-API_URL="/static/swagger.json"
 
 swagger_ui_blueprint = get_swaggerui_blueprint(
-    SWAGGER_URL,
-    API_URL,
+    endpoints.SWAGGER_URL,
+    endpoints.API_URL,
     config={
         'app_name': 'Access API'
     }
 )
-app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+app.register_blueprint(swagger_ui_blueprint, url_prefix=endpoints.SWAGGER_URL)
 
 @app.route("/")
 def home():
@@ -26,12 +27,14 @@ def home():
         "Message": "app up and running successfully"
     })
 
-
-
 @app.route("/access",methods=["POST"])
 def access():
     data = request.get_json()
-    print(data)
+    
+    if data is None:
+        print('[ERROR] No body found for access request!')
+        return
+
     name = data.get("name", "dipto")
     server = data.get("server","server1")
 
@@ -43,12 +46,26 @@ def access():
 
 @app.route("/run/train", methods=["POST"])
 def train():
-    if process and process.poll() is None:
+    data = request.get_json()
+    print('[INFO] JSON data for request', data)
+
+    if not data:
+        print('[ERROR] No body found for request!')
+        return
+    
+    port = data.get('port', "8081")
+    print('[INFO] getting training PORT', port)
+
+    global process
+    hasTrainingInPort = auxiliary.contains(
+        process, 
+        lambda x: x.args[arguments_position.TRAINING_PORT_ARG_POSITION] == port
+        )
+
+    if hasTrainingInPort:
         return jsonify({"status": "This server is already running a training. Please, wait for it become free to go again"}), 503
     
-    print("Staring...")
-    data = request.get_json()
-    print(data)
+    print("[INFO] Process Staring...")
 
     server_ip = data.get("server_ip", "127.0.0.1")
     port = data.get("port", "8081")
@@ -58,10 +75,11 @@ def train():
     dataset_name = data.get("datasetName", [])
     epochs = data.get("epochs")
     lr = data.get("lr", 0.001)
-    dataset_id = data.get("datasetId")
+    dataset_id = data.get("datasetId", 12)
     batch_size = data.get("batch_size", 32)
     optim = data.get("optim")
     sleep(5)
+
     # Executar fl_client.py em uma thread separada
     thread = threading.Thread(target=run_fl_client, args=(
     server_ip, port, world_size, rank, model_name, dataset_name, epochs, lr, dataset_id, batch_size, optim))
@@ -74,14 +92,10 @@ def train():
 
 @app.route('/server-status', methods=['GET'])
 def check_server():
-    if process and process.poll() is None:
-        return jsonify({"status": "The server is running a training."}), 503
-    else:
-        return jsonify({"status": "The server is twiddling its thumbs, waiting for action."}), 200
+    return jsonify({"status": "Server is up and running"})
 
 def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, epochs, lr, dataset_id, batch_size, optim):
-    global process 
-    process = subprocess.Popen(["python3", "scripts/fl_client.py",
+    localProcess = subprocess.Popen(["python3", "scripts/fl_client.py",
                     "--server_ip", str(server_ip),
                     "--port", str(port),
                     "--world_size", str(world_size),
@@ -92,6 +106,9 @@ def run_fl_client(server_ip, port, world_size, rank, model_name, dataset_name, e
                     "--dataset_id", str(dataset_id),
                     "--batch_size", str(batch_size),
     	                "--optim", optim])
+    
+    global process 
+    process.append(localProcess)
 
 
 if __name__=="__main__":

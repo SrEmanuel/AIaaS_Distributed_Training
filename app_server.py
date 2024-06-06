@@ -41,7 +41,7 @@ def train():
         print('[ERROR] No body found for request')
         return
 
-    port = data.get("port", "3002")
+    port = data.get("port", "8081")
     print('[INFO] getting training PORT', port)
 
     global process
@@ -120,6 +120,9 @@ def performTrainingRequest(currentProcess):
     currentUuid = currentProcess.args[arguments_position.TRAINING_UUID_ARG_POSITION]
     
     requests.post(endpoints.IAAS_ENDPOINT_LOCAL+"/finishTraining/"+currentUuid, files=parts)
+    
+    global process
+    process.remove(currentProcess)
 
 def checkTrainingFinish(port):
     global process
@@ -149,4 +152,4 @@ def run_fl_server(server_ip, port, model_name, trainingUuid, rounds):
 
 
 if __name__=="__main__":
-    app.run(host="0.0.0.0",port=8081)
+    app.run(host="0.0.0.0",port=8080)
